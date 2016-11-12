@@ -6,10 +6,6 @@
 # Description:   Given a squadron roster/schedule input .csv, this program
 #                creates a complete alert schedule for the selected 91 OG
 #                squadron.        
-#
-# Authors:       Mike Benedetti              |  Brian Smith
-#                michael.benedetti@us.af.mil |  brian.smith.189@us.af.mil
-#                916-529-8427                |  701-723-6565
 ###############################################################################
 
 # Imports
