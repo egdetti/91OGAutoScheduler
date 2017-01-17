@@ -13,8 +13,8 @@
 ###############################################################################
 
 # Imports
-import random
-import traceback
+from tkinter import messagebox
+import random, traceback, collections
 from calendar import monthrange
 from classes import *
 
@@ -38,7 +38,7 @@ def execute():
 # Actual main program function
 def runProgram():
     # Identify globals that will be modified
-    global rows, daysInMonth, sq, flightHolder, alertList, plccs, scps, mccms, sched, schedules
+    global rows, daysInMonth, sq, flights, flightHolder, alertList, plccs, scps, mccms, sched, schedules
 
     # Define variables based on GUI selections
     squad = int(window.sqv.get())
@@ -53,7 +53,7 @@ def runProgram():
         #create schedule object
         sched = schedule(year, month)
         daysInMonth = sched.daysInMonth
-
+        flights = []
         with open(filename) as f:
             # Create iterable list of rows in csv
             csvReader = csv.reader(f)
@@ -99,26 +99,28 @@ def runProgram():
                 for m in mccms:
                     m.crewPartners = [p for p in mccms if p.crew_num == m.crew_num and p.name != m.name]
                 currentLine += 1
-
+            if collections.Counter(flights) == collections.Counter(window.adv.fltRotationVar.get().split(',')):
+                flights = window.adv.fltRotationVar.get().split(',')
+            else:
+                messagebox.showwarning("Bad Flight Rotation Input", "Flight Rotations do not match input CSV.  The program will continue\nwith default flight rotations.")
+                print("bad")
         # Assign LCCs based on squadron and establish other squadron specific variables
         # flightHolder etermines which flight goes first for flight deployments (in a 0 indexed list)
         if squad == 740:
             plccs = ['a', 'b', 'd', 'e']
             scps = ['c']
-            flightHolder = 0
         elif squad == 741:
             plccs = ['f', 'g', 'h', 'j']
             scps = ['i']
-            flightHolder = 1
         elif squad == 742:
             plccs = ['k', 'l', 'n', 'o']
             scps = ['m']
-            flightHolder = 0
         if sqDep:
             plccs = ['a', 'b', 'd', 'e',
                      'f', 'g', 'h', 'j',
                      'k', 'l', 'n', 'o']
             scps = ['c', 'i', 'm']
+        flightHolder = 0
         #randomize order of sites
         random.shuffle(plccs)
         random.shuffle(scps)
