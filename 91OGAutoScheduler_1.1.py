@@ -9,7 +9,7 @@
 #
 # Authors:       Mike Benedetti              |  Brian Smith
 #                michael.benedetti@us.af.mil |  brian.smith.189@us.af.mil
-#                916-529-8427                |  701-723-6565
+#
 ###############################################################################
 
 # Imports
@@ -58,14 +58,17 @@ def runProgram():
             # Create iterable list of rows in csv
             csvReader = csv.reader(f)
             rows = [row for row in csvReader]
-
             #Convert csv to mccm objects and add to mccms list
             currentLine = 0
             mccms = []
             #identify length required for each line to ensure T and O days fit for alerts at end of month
             reqLen = len(daysInMonth) + dateOffset + 2
             for row in rows:
+                print(currentLine)
                 if currentLine > 1:
+                    #If a blank row is encountered, skip to the next row.
+                    if not ''.join(row).strip():
+                        continue
                     if len(row) < reqLen:
                         reqAdd = reqLen - len(row)
                         for i in range(0, reqAdd):
@@ -103,7 +106,6 @@ def runProgram():
                 flights = window.adv.fltRotationVar.get().split(',')
             else:
                 messagebox.showwarning("Bad Flight Rotation Input", "Flight Rotations do not match input CSV.  The program will continue\nwith default flight rotations.")
-                print("bad")
         # Assign LCCs based on squadron and establish other squadron specific variables
         # flightHolder etermines which flight goes first for flight deployments (in a 0 indexed list)
         if squad == 740:
@@ -176,6 +178,8 @@ def runProgram():
                     else:
                         bDayInc = updateDay(bDayInc)
         bDays.sort()
+        if window.adv.backupCalVar.get():
+            bDays = window.adv.backupCalendar.backupDays
         # Begin process of alert assignment
         if flightDeployments:
             r = 2

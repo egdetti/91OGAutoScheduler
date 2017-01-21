@@ -1,9 +1,9 @@
 import os, csv, calendar, fnmatch
 from datetime import date, timedelta
 import tkinter as tk
-from tkinter import SUNKEN, Button, StringVar, IntVar, OptionMenu, CENTER
-from tkinter import Scale, HORIZONTAL, DISABLED, Toplevel, Checkbutton
-from tkinter import font, Frame, FALSE, W, E, N, S, Label, LEFT, RIGHT
+from tkinter import SUNKEN, Button, StringVar, IntVar, OptionMenu, CENTER, Entry
+from tkinter import Scale, HORIZONTAL, DISABLED, Toplevel, Checkbutton, NORMAL, END
+from tkinter import font, Frame, FALSE, W, E, N, S, Label, LEFT, RIGHT, RAISED
 from tkinter.filedialog import askopenfilename
 from tkinter.filedialog import asksaveasfilename
 
@@ -60,16 +60,18 @@ class progWindow(Frame):
         self.sqOption = OptionMenu(self, self.sqv, "740", "741", "742", command=self.sqCheck)
         self.sqOption.grid(row=2, column=1, sticky="ew")
         self.yrv = IntVar()
-        self.yrv.set(self.years[0])
         self.yearLabel = Label(self, text='Select Year:', justify=RIGHT)
         self.yearLabel.grid(row=3, column=0, sticky=E)
-        self.yearEntry = OptionMenu(self, self.yrv, *self.years)
+        self.yearEntry = OptionMenu(self, self.yrv, *self.years, command=lambda x:self.adv.backupCalendar.createCalendar(self.yrv.get(),
+                                                                                                                         int(list(calendar.month_abbr).index(self.mv.get()))))
+        self.yrv.set(self.years[0])
         self.yearEntry.grid(row=3, column=1, sticky="ew")
         self.mv = StringVar()
-        self.mv.set(self.months[1])
         self.monthLabel = Label(self, text='Select Month:', justify=RIGHT)
         self.monthLabel.grid(row=4, column=0, sticky=E)
-        self.monthEntry = OptionMenu(self, self.mv, *[x for x in self.months if x != ""])
+        self.monthEntry = OptionMenu(self, self.mv, *[x for x in self.months if x != ""], command=lambda x:self.adv.backupCalendar.createCalendar(self.yrv.get(),
+                                                                                                                         int(list(calendar.month_abbr).index(self.mv.get()))))
+        self.mv.set(self.months[1])
         self.monthEntry.grid(row=4, column=1, sticky="ew")
         self.slider1Label = Label(self, text="Crew Pairing Weight:")
         self.slider1Label.grid(row=6, column=0, sticky="w")
@@ -109,6 +111,7 @@ class progWindow(Frame):
         self.goButton = Button(self, text="Run", width=10, state=DISABLED)
         self.goButton.grid(row=13, column=1, sticky="ew")
         self.adv = advancedOptions()
+        self.adv.backupCalendar.createCalendar(self.yrv.get(), int(list(calendar.month_abbr).index(self.mv.get())))
 
     # Determine if user has selected a squadron
     def sqCheck(self, sq):
@@ -131,9 +134,9 @@ class progWindow(Frame):
         if fname:
             self.browseLabel['text'] = os.path.basename(fname)
             self.inputLoc = fname
-            print(self.inputLoc)
             self.file = True
             self.readyCheck()
+            self.loadFlights(fname)
             return
 
     # Creates a template .csv for user to fill in for input
@@ -163,6 +166,19 @@ class progWindow(Frame):
     def showAdvOptions(self, event):
         self.adv.top.deiconify()
 
+    def loadFlights(self, fileName):
+        flights = []
+        with open(fileName) as f:
+            csvReader = csv.reader(f)
+            rows = [row for row in csvReader]
+            currentLine = 0
+            for row in rows:
+                if currentLine > 1:
+                    if row[0] not in flights and row[0] != "":
+                        flights.append(row[0])
+                currentLine += 1
+        self.adv.fltRotationEntry.delete(0, END)
+        self.adv.fltRotationVar.set(",".join(flights))
 
 # Advanced Options window
 class advancedOptions():
@@ -174,11 +190,12 @@ class advancedOptions():
         self.top = Toplevel()
         self.top.title("Advanced Options")
         self.top.protocol("WM_DELETE_WINDOW", lambda: self.top.withdraw())
-        self.top.geometry("270x180")
+        self.top.config(padx=10, pady=10)
         self.top.resizable(width=False, height=False)
         self.top.withdraw()
         self.buffer = Label(self.top, text="     ")
         self.buffer.grid(row=0, column=0)
+        self.backupCalendar = backupCalendar()
         self.fltDepVar = IntVar()
         self.fltDepVar.set(self.fltDep)
         self.fltDepLab = Label(self.top, text="Flight Deployments:")
@@ -186,33 +203,45 @@ class advancedOptions():
         self.fltDepCB = Checkbutton(self.top, variable=self.fltDepVar,
                                     command=lambda: self.sqflt(self.fltDepCB))
         self.fltDepCB.grid(row=0, column=2, sticky="ew")
+        self.fltRotationLabel = Label(self.top, text="Flight Rotation:")
+        self.fltRotationLabel.grid(row=1, column=1, sticky="e")
+        self.fltRotationTtp = CreateToolTip(self.fltRotationLabel,
+                                        "Designates ordering of flights for flight deployment alert assignment.\nEnsure that flights are separated by a comma and match the input csv.")
+        self.fltRotationVar = StringVar()
+        self.fltRotationEntry = Entry(self.top, width=10, state=DISABLED, textvariable=self.fltRotationVar)
+        self.fltRotationEntry.grid(row=1, column=2, sticky="ew")
         self.sqDepVar = IntVar()
         self.sqDepVar.set(self.sqDep)
         self.sqDepLab = Label(self.top, text="Squadron Deployments:")
-        self.sqDepLab.grid(row=1, column=1, sticky="e")
+        self.sqDepLab.grid(row=2, column=1, sticky="e")
         self.sqDepCB = Checkbutton(self.top, variable=self.sqDepVar,
                                    command=lambda: self.sqflt(self.sqDepCB))
-        self.sqDepCB.grid(row=1, column=2, sticky="ew")
+        self.sqDepCB.grid(row=2, column=2, sticky="ew")
         self.b2bLabel = Label(self.top, text="Max number of back-to-backs:")
-        self.b2bLabel.grid(row=2, column=1, sticky="e")
+        self.b2bLabel.grid(row=3, column=1, sticky="e")
         self.b2bVar = IntVar()
         self.b2bVar.set(5)
         self.b2bBox = OptionMenu(self.top,
                                  self.b2bVar,
                                  '1', '2', '3', '4', '5',
                                  '6', '7', '8', '9', '10')
-        self.b2bBox.grid(row=2, column=2)
+        self.b2bBox.grid(row=3, column=2)
         self.backupsLab = Label(self.top, text="Max number of backups:")
-        self.backupsLab.grid(row=3, column=1, sticky="e")
+        self.backupsLab.grid(row=4, column=1, sticky="e")
         self.backVar = IntVar()
         self.backVar.set(1)
         self.backups = OptionMenu(self.top,
                                   self.backVar,
                                   '1', '2', '3', '4', '5',
                                   '6', '7', '8', '9', '10')
-        self.backups.grid(row=3, column=2)
+        self.backups.grid(row=4, column=2)
+        self.customBackupsLabel = Label(self.top, text="Manually select backup days:")
+        self.customBackupsLabel.grid(row=5, column=1, sticky="e")
+        self.backupCalVar = IntVar()
+        self.customBackupsCheck = Checkbutton(self.top, variable=self.backupCalVar, command=self.openCalendar)
+        self.customBackupsCheck.grid(row=5, column=2)
         self.numberOfRunsLabel = Label(self.top, text="Number of schedule runs:")
-        self.numberOfRunsLabel.grid(row=4, column=1, sticky="e")
+        self.numberOfRunsLabel.grid(row=6, column=1, sticky="e")
         self.numRunsToolTip = CreateToolTip(self.numberOfRunsLabel,
                                         "Will generate the selected number of schedules and choose the one with \nthe least amount of holes for export.\n\nWarning:  Choosing a high number will cause long processing times.")
         self.runVar = IntVar()
@@ -221,17 +250,104 @@ class advancedOptions():
                                        self.runVar,
                                        1,10,20,30,40,50,
                                        60,70,80,90,100)
-        self.numberOfRuns.grid(row=4, column=2)
+        self.numberOfRuns.grid(row=6, column=2)
         self.ok = Button(self.top, text="Ok", command=lambda: self.top.withdraw())
-        self.ok.grid(row=5, column=2, sticky="ew")
+        self.ok.grid(row=7, column=2, sticky="ew")
+
+    def openCalendar(self):
+        if self.backupCalVar.get() and self.backupCalendar.month and self.backupCalendar.year:
+            self.backupCalendar.top.deiconify()
+        else:
+            self.backupCalendar.top.withdraw()
 
     def sqflt(self, box):
         if box == self.fltDepCB:
             if self.fltDepVar.get() == 1:
                 self.sqDepVar.set(0)
+                self.fltRotationEntry.config(state=NORMAL)
+            if self.fltDepVar.get() == 0:
+                self.fltRotationEntry.config(state=DISABLED)
         if box == self.sqDepCB:
             if self.sqDepVar.get() == 1:
                 self.fltDepVar.set(0)
+                self.fltRotationEntry.config(state=DISABLED)
+
+
+class myLabel(Label):
+    def __init__(self, c, t, px, py, r, h, w):
+        tk.Label.__init__(self, c, text=t,
+                          padx=px, pady=py, relief=r,
+                          height=h, width=w)
+        self.checked = False
+
+class backupCalendar():
+    def __init__(self):
+        self.backupDays = []
+        self.top = Toplevel()
+        self.top.title("Backups")
+        self.top.resizable(width=False, height=False)
+        self.top.config(bg="#666666", padx=25, pady=25)
+        self.top.protocol("WM_DELETE_WINDOW", lambda: self.top.withdraw())
+        self.top.withdraw()
+        self.defaultbg = None
+        self.defaultfg = None
+        self.month = None
+        self.year = None
+
+    def createCalendar(self, y, m):
+        self.month = m
+        self.year = y
+        self.top.title("Backups - {0} {1}".format(calendar.month_name[m], y))
+        for widget in self.top.winfo_children():
+            widget.destroy()
+        self.backupDays = []
+        cal = calendar.monthcalendar(y, m)
+        cal2 = []
+        for row in range(len(cal) + 1):
+            if row == len(cal):
+                newRow = cal[row - 1][-1:]
+            elif row - 1 >= 0 and row < len(cal):
+                newRow = cal[row - 1][-1:] + cal[row][0:-1]
+            else:
+                newRow = [0] + cal[row][0:-1]
+            if sum(newRow) > 0:
+                cal2.append(newRow)
+        cal = cal2
+
+        for i, h in enumerate(["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"]):
+            header = Label(self.top, text=h)
+            header.config(bg="#666666", fg="#CCCCCC")
+            header.grid(row=0, column=i)
+
+        for r in range(len(cal)):
+            for c in range(len(cal[r])):
+                if cal[r][c] != 0:
+                    lab = myLabel(self.top, cal[r][c],
+                                  12, 12, RAISED,
+                                  1, 1)
+                    lab.config(font=("Courier", 12))
+                    lab.bind("<Button-1>", self.callback)
+                    lab.grid(row=r + 1, column=c)
+
+            self.defaultbg = lab.cget("bg")
+            self.defaultfg = lab.cget("fg")
+
+    def callback(self, event):
+        lab = event.widget
+        if lab.checked:
+            lab.config(bg=self.defaultbg,
+                       fg=self.defaultfg,
+                       relief=RAISED)
+            lab.checked = False
+            self.backupDays.remove(int(lab.cget("text")))
+            self.backupDays.sort()
+        else:
+            lab.config(bg='#2222AA',
+                       fg='#CCCCCC',
+                       relief=SUNKEN)
+            lab.checked = True
+            self.backupDays.append(int(lab.cget("text")))
+            self.backupDays.sort()
 
 class schedule():
     def __init__(self, year, month):
