@@ -4,7 +4,7 @@ block_cipher = None
 
 
 a = Analysis(['91OGAutoScheduler_1.2.py'],
-             pathex=['C:\\Users\\Mike\\PycharmProjects\\91OGAutoScheduler'],
+             pathex=['C:\\Users\\micha\\PycharmProjects\\91OGAutoScheduler'],
              binaries=[],
              datas=[('91OG.ico', '.')],
              hiddenimports=[],
