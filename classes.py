@@ -6,6 +6,7 @@ from tkinter import Scale, HORIZONTAL, DISABLED, Toplevel, Checkbutton, NORMAL, 
 from tkinter import font, Frame, FALSE, W, E, N, S, Label, LEFT, RIGHT, RAISED, GROOVE
 from tkinter.filedialog import askopenfilename
 from tkinter.filedialog import asksaveasfilename
+from tkinter import messagebox
 import sys
 import re
 
@@ -46,6 +47,14 @@ class progWindow(Frame):
         self.master.resizable(width=FALSE, height=FALSE)
         set_icon(self.master)
         self.grid(padx=10, pady=10)
+        menubar = tk.Menu(self.master)
+        filemenu = tk.Menu(menubar, tearoff=0)
+        filemenu.add_command(label="Exit", command=lambda: self.master.quit())
+        menubar.add_cascade(label="File", menu=filemenu)
+        menubar.add_command(label="Advanced Options", command=lambda:self.adv.top.deiconify())
+        menubar.add_command(label="Schedule Audit", command=lambda:self.statistics_window.top.deiconify())
+        menubar.add_command(label="About", command=lambda: messagebox.showinfo("About", "91 OG Auto Scheduler Created by:\n\nMichael Benedetti\t\tBrian Smith\nmichael.benedetti@us.af.mil\tbrian.smith.189@us.af.mil\n\nWritten in Python 3.5.1 and compiled to exe using pyinstaller"))
+        self.master.config(menu=menubar)
         self.file = False
         self.sq = False
         self.years = [date.today().year, date.today().year + 1]
@@ -104,19 +113,10 @@ class progWindow(Frame):
         self.slider3 = Scale(self, from_=1, to=10, orient=HORIZONTAL, length=200, showvalue=0,
                              command=lambda x: self.updateSliderLabel(self.slider3, self.slider3Out))
         self.slider3.grid(row=11, column=0, sticky="w")
-        self.showAdv = Label(self, text="Advanced Options", fg="blue", cursor="hand2")
-        self.showAdv.grid(row=12, column=1, sticky="e")
-        f = font.Font(self.showAdv, self.showAdv.cget("font"))
-        f.configure(underline=True)
-        self.showAdv.configure(font=f)
-        self.showAdv.bind("<Button-1>", lambda x: self.adv.top.deiconify())
-        self.show_statistics = Label(self, text="Generate Statistics", fg="Blue", cursor="hand2", font=f)
-        self.show_statistics.grid(row=12, column=0, sticky='w')
-        self.show_statistics.bind("<Button-1>", lambda x: self.statistics_window.top.deiconify())
         self.tempButton = Button(self, text="Create Template", command=self.create_template)
-        self.tempButton.grid(row=13, column=0, sticky="w")
+        self.tempButton.grid(row=12, column=0, sticky="w")
         self.goButton = Button(self, text="Run", width=10, state=DISABLED)
-        self.goButton.grid(row=13, column=1, sticky="ew")
+        self.goButton.grid(row=12, column=1, sticky="ew")
         self.adv = advancedOptions()
         self.adv.backupCalendar.createCalendar(self.yrv.get(), int(list(calendar.month_abbr).index(self.mv.get())))
         self.statistics_window = StatisticsWindow()
@@ -444,7 +444,7 @@ class StatisticsWindow():
     def __init__(self):
         self.top = Toplevel()
         set_icon(self.top)
-        self.top.title("Statistics")
+        self.top.title("Schedule Audit")
         self.top.config(padx=10, pady=10)
         self.top.minsize(width=300, height=20)
         self.top.resizable(width=FALSE, height=FALSE)
